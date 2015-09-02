@@ -9,62 +9,53 @@ namespace ScamSpam
 {
     class Program
     {
+        private static List<int> prefixes = new List<int>() {
+            71,
+            72,
+            73,
+            74,
+            76,
+            78,
+            79,
+            81,
+            82,
+            83,
+            84,
+            85,
+            86
+        };
+
         static void Main(string[] args)
         {
             Console.WriteLine("ScamSpam");
             Console.WriteLine("Flood SMS scam links with spam");
+            Console.WriteLine();
+            Console.Write("Url\t:");
+            var url = Console.ReadLine();
 
-            var urlFormat = "http://www.a3c.be/{0}/{1}.php?m=";
+            var client = new HttpClient();
+            var random = new Random();
 
-            var urlList = new List<string>();
-
-            for (int i = 0; i < 10; i++)
+            while (!Console.KeyAvailable)
             {
-                for (char j = 'a'; j <= 'z'; j++)
+                var prefix = prefixes.Skip(random.Next(0, prefixes.Count() - 1)).First() * 10000000;
+                var payload = random.Next(0, 999999);
+
+                payload += prefix;
+
+                Console.WriteLine("spamming {0}{1}", url, payload.ToString("000000000"));
+                var getTask = client.GetAsync(url + payload.ToString("000000000"));
+                getTask.Wait();
+
+                if (!getTask.Result.IsSuccessStatusCode)
                 {
-                    // prevent unsuccessful spam attempts
-                    // currently we know that 5, v and m work as a combination
-                    if (i == 5 && (j == 'v' || j == 'm'))
-                        urlList.Add(string.Format(urlFormat, i, j));
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine("unsuccessful spam attempt {0}", payload.ToString("000000000"));
+                    Console.ForegroundColor = ConsoleColor.Gray;
                 }
             }
 
-            var junkData = generateJunk();
-
-            var client = new HttpClient();
-            var spamUrls = new List<string>();
-
-            Parallel.ForEach(junkData, (data) =>
-            {
-                foreach (var url in urlList)
-                {
-                    Console.WriteLine("spamming {0}{1}", url, data);
-                    var getTask = client.GetAsync(url + data.ToString());
-                    getTask.Wait();
-
-                    if (!getTask.Result.IsSuccessStatusCode)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.WriteLine("unsuccessful spam attempt {0}", data);
-                        Console.ForegroundColor = ConsoleColor.Gray;
-                    }
-                }
-            });
-
             Console.ReadKey();
-        }
-
-        private static List<int> generateJunk()
-        {
-            var results = new List<int>();
-
-            // need a better way to generate all the numbers
-            var startNumber = 790000001;
-
-            while (startNumber < 800000000)
-                results.Add(++startNumber);
-
-            return results;
         }
     }
 }
